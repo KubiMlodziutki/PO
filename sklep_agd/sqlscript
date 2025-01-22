@@ -1,0 +1,242 @@
+CREATE DATABASE IF NOT EXISTS sklep_agd
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE sklep_agd;
+
+CREATE TABLE IF NOT EXISTS Konto (
+  ID INT AUTO_INCREMENT,
+  Login VARCHAR(255) NOT NULL,
+  Haslo VARCHAR(255) NOT NULL,
+  Imie VARCHAR(255) NOT NULL,
+  Nazwisko VARCHAR(255) NOT NULL,
+  Email VARCHAR(255) NOT NULL,
+  PRIMARY KEY (ID),
+  UNIQUE (Login),
+  UNIQUE (Email)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Klient (
+  ID INT AUTO_INCREMENT,
+  KontoID INT NOT NULL,
+  Punkty_lojalnosciowe INT DEFAULT 0,
+  Wiek INT,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (KontoID) REFERENCES Konto(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Pracownik (
+  ID INT AUTO_INCREMENT,
+  KontoID INT NOT NULL,
+  Czy_kierownik INT DEFAULT 0,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (KontoID) REFERENCES Konto(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Produkt (
+  ID INT AUTO_INCREMENT,
+  Nazwa VARCHAR(255) NOT NULL,
+  Cena DOUBLE(10,2) NOT NULL,
+  Stan_magazynowy INT NOT NULL,
+  Opis VARCHAR(255),
+  Obrazek VARCHAR(255),
+  Data_dodania DATE,
+  Kategoria VARCHAR(255),
+  Model VARCHAR(255),
+  Data_produkcji DATE,
+  PRIMARY KEY (ID)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS Adres_dostawy (
+  ID INT AUTO_INCREMENT,
+  Ulica VARCHAR(255) NOT NULL,
+  Numer_domu VARCHAR(255) NOT NULL,
+  Numer_mieszkania VARCHAR(255) NULL,
+  Kod_pocztowy VARCHAR(255) NOT NULL,
+  Miasto VARCHAR(255) NOT NULL,
+  PRIMARY KEY (ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Dostawa (
+  ID INT AUTO_INCREMENT,
+  Typ_dostawy VARCHAR(255) NOT NULL,
+  Adres_dostawyID INT NOT NULL,
+  Czy_zabranie_starego_sprzetu INT DEFAULT 0,
+  Czy_wniesienie_do_domu INT DEFAULT 0,
+  Czy_instalacja_sprzetu INT DEFAULT 0,
+  Cena_za_dostawe DOUBLE(10,2) DEFAULT 0,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (Adres_dostawyID) REFERENCES Adres_dostawy(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Faktura (
+  ID INT AUTO_INCREMENT,
+  Numer_faktury VARCHAR(255) NOT NULL,
+  Data_wystawienia DATE,
+  Data_platnosci DATE,
+  Kwota_netto DOUBLE(10,2),
+  Kwota_brutto DOUBLE(10,2),
+  Kwota_vat DOUBLE(10,2),
+  PRIMARY KEY (ID),
+  UNIQUE (Numer_faktury)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Platnosc (
+  ID INT AUTO_INCREMENT,
+  Status INT,
+  Sposob INT,
+  PRIMARY KEY (ID)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Zamowienie (
+  ID INT AUTO_INCREMENT,
+  KlientID INT NOT NULL,
+  PracownikID INT,
+  FakturaID INT,
+  PlatnoscID INT,
+  Status INT,
+  Wartosc_w_pln DOUBLE(10,2),
+  DostawaID INT,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (KlientID) REFERENCES Klient(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  FOREIGN KEY (PracownikID) REFERENCES Pracownik(ID)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  FOREIGN KEY (FakturaID) REFERENCES Faktura(ID)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  FOREIGN KEY (PlatnoscID) REFERENCES Platnosc(ID)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  FOREIGN KEY (DostawaID) REFERENCES Dostawa(ID)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Reklamacja (
+  ID INT AUTO_INCREMENT,
+  PracownikID INT,
+  KlientID INT,
+  ZamowienieID INT,
+  Status INT,
+  Powod VARCHAR(255),
+  PRIMARY KEY (ID),
+  FOREIGN KEY (PracownikID) REFERENCES Pracownik(ID)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  FOREIGN KEY (KlientID) REFERENCES Klient(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  FOREIGN KEY (ZamowienieID) REFERENCES Zamowienie(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Zamowione_produkty (
+  ID INT AUTO_INCREMENT,
+  ZamowienieID INT NOT NULL,
+  ProduktID INT NOT NULL,
+  Ilosc INT NOT NULL,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (ZamowienieID) REFERENCES Zamowienie(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  FOREIGN KEY (ProduktID) REFERENCES Produkt(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS Opinie (
+  ID INT AUTO_INCREMENT,
+  ProduktID INT NOT NULL,
+  KlientID INT NOT NULL,
+  Data_wystawienia DATE NOT NULL,
+  Tresc VARCHAR(255),
+  Ocena INT,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (ProduktID) REFERENCES Produkt(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  FOREIGN KEY (KlientID) REFERENCES Klient(ID)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+INSERT INTO Konto (Login, Haslo, Imie, Nazwisko, Email)
+VALUES
+  ('janek123', 'haslo1', 'Jan', 'Kowalski', 'jan@example.com'),
+  ('anna89',  'haslo2', 'Anna', 'Nowak',   'anna@example.com');
+
+INSERT INTO Klient (KontoID, Punkty_lojalnosciowe, Wiek)
+VALUES
+  (1, 120, 35),   -- Klient o ID=1 (bo KontoID=1)
+  (2,  80, 28);   -- Klient o ID=2 (bo KontoID=2)
+
+INSERT INTO Produkt (Nazwa, Cena, Stan_magazynowy, Opis, Obrazek, Data_dodania, Kategoria, Model, Data_produkcji)
+VALUES
+('Pralka Whirlpool W7', 1299.99, 10, 'Pralka ładowana od frontu, 7 kg.', 
+ 'pralka_whirlpool.jpg', '2025-01-05', 'Pralki', 'W7', '2024-06-01'),
+('Zmywarka Bosch X2',   1499.50,  5, 'Zmywarka do zabudowy, 60 cm.',
+ 'zmywarka_bosch.jpg', '2025-01-01', 'Zmywarki', 'X2', '2024-05-11'),
+('Lodówka Samsung R2',  1999.00,  2, 'Chłodziarko-zamrażarka, noFrost.',
+ 'lodowka_samsung.jpg', '2025-01-10', 'Lodówki', 'R2', '2024-07-15'),
+('Kuchenka Amica G2',    900.00,  3, 'Kuchenka gazowo-elektryczna.', 
+ 'kuchenka_amica.jpg', '2025-01-08', 'Kuchenki', 'G2', '2024-02-01'),
+('Odkurzacz Dyson V11', 2100.00,  6, 'Bezprzewodowy odkurzacz pionowy.',
+ 'odkurzacz_dyson.jpg', '2025-01-12', 'Odkurzacze', 'V11', '2024-03-20'),
+
+('Pralka LG TurboWash', 1799.00,  4, 'Pralka z szybkim praniem, 8 kg.',
+ 'pralka_lg.jpg', '2025-01-03', 'Pralki', 'TurboWash', '2024-05-01'),
+('Zmywarka Siemens SN',  1290.00, 10, 'Zmywarka wolnostojąca, 45 cm.',
+ 'zmywarka_siemens.jpg', '2025-01-02', 'Zmywarki', 'SN45', '2024-01-12'),
+('Lodówka Beko FreeLine', 1600.00, 8, 'Z systemem No Frost, klasa A+.',
+ 'lodowka_beko.jpg', '2025-01-06', 'Lodówki', 'FreeLine', '2024-04-04'),
+('Piekarnik Whirlpool O1', 850.00,  7, 'Piekarnik do zabudowy, 65L.',
+ 'piekarnik_whirlpool.jpg', '2025-01-04', 'Piekarniki', 'O1', '2023-12-31'),
+('Mikrofalówka Samsung M3', 399.00, 15, 'Mikrofalówka z grillem.',
+ 'mikrofalowka_samsung.jpg', '2025-01-02', 'Kuchenki mikrofalowe', 'M3', '2024-01-20'),
+
+('Odkurzacz Philips SpeedPro', 700.00, 12, 'Lekki odkurzacz bezworkowy.',
+ 'odkurzacz_philips.jpg', '2025-01-09', 'Odkurzacze', 'SpeedPro', '2024-03-15'),
+('Żelazko Tefal Xpress', 179.00, 30, 'Żelazko parowe, stopa ceramiczna.',
+ 'zelazko_tefal.jpg', '2025-01-07', 'Żelazka', 'Xpress', '2023-11-10'),
+('Blender Bosch MiniMix', 89.90, 20, 'Blender ręczny, 300W.',
+ 'blender_bosch.jpg', '2025-01-03', 'Blendery', 'MiniMix', '2024-01-01'),
+('Czajnik elektryczny Philips Q5', 129.00, 14, 'Czajnik 1,7L, moc 2400W.',
+ 'czajnik_philips.jpg', '2025-01-14', 'Czajniki', 'Q5', '2024-07-01'),
+('Ekspres do kawy DeLonghi E9', 999.00, 5, 'Automatyczny ekspres, młynek wbudowany.',
+ 'ekspres_delonghi.jpg', '2025-01-14', 'Ekspresy', 'E9', '2024-08-05'),
+
+('Płyta indukcyjna Amica PI', 1199.00, 2, '4 pola grzewcze, sterowanie dotykowe.',
+ 'plyta_amica.jpg', '2025-01-15', 'Płyty grzewcze', 'PI-4', '2024-06-10'),
+('Pralka Beko AquaWave', 1100.00,  0, 'Pralka ładowana od frontu, 6 kg.',
+ 'pralka_beko.jpg', '2025-01-11', 'Pralki', 'AquaWave', '2024-03-05'),
+('Lodówka Amica XCR', 1400.00, 10, 'Z zamrażalnikiem na dole, klasa A++.',
+ 'lodowka_amica.jpg', '2025-01-13', 'Lodówki', 'XCR', '2024-02-20'),
+('Zmywarka Candy CDP', 1050.00,  2, 'Zmywarka 60 cm, klasa A+.',
+ 'zmywarka_candy.jpg', '2025-01-01', 'Zmywarki', 'CDP', '2024-04-22'),
+('Piekarnik Samsung Chef', 1250.00, 4, 'Piekarnik z termoobiegiem, 70L.',
+ 'piekarnik_samsung.jpg', '2025-01-10', 'Piekarniki', 'Chef', '2024-07-07');
+
+
+INSERT INTO Opinie (ProduktID, KlientID, Data_wystawienia, Tresc, Ocena)
+VALUES
+  (1, 1, '2025-01-20', 'Działa świetnie, pierze dokładnie!', 5),
+  (2, 1, '2025-01-15', 'Zmywarka OK, trochę głośna.', 4),
+  (3, 2, '2025-01-18', 'Zajmuje mało miejsca, super chłodzenie.', 5),
+  (5, 1, '2025-01-14', 'Sprawuje się dobrze, choć bateria mogłaby być lepsza.', 4),
+  (6, 1, '2025-01-05', 'Bardzo szybkie pranie, polecam.', 5),
+  (10,2, '2025-01-12', 'Działa, choć mogłaby podgrzewać trochę równomierniej.', 3),
+  (15,2, '2025-01-13', 'Bardzo fajna płyta, szybkie grzanie.', 4),
+  (16,1, '2025-01-11', 'Szkoda, że jest niedostępna teraz, bo sprawdzona. W porządku.', 5),
+  (20,1, '2025-01-10', 'Duży piekarnik, łatwa obsługa. Piecze równo.', 5),
+  (11,2, '2025-01-15', 'Lekki, wciąga dokładnie, solidny sprzęt.', 5);
